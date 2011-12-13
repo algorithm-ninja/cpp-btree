@@ -1435,6 +1435,11 @@ class btree : public Params::key_compare {
       sizeof(key_compare_checker(key_compare_helper()(key_type(), key_type()))) ==
       sizeof(base::big_),
       key_comparison_function_must_return_bool);
+
+  // Note: We insist on kTargetValues, which is computed from
+  // Params::kTargetNodeSize, falling under 256 because of the uint8
+  // fields of base_fields.
+  COMPILE_ASSERT(kNodeValues < 256, target_node_size_too_large);
 };
 
 ////

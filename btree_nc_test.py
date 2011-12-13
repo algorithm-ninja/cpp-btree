@@ -30,28 +30,20 @@ class BtreeNegativeUnitTest(googletest.TestCase):
 
         # Test that int does not work as a return type for key comparison.
         ('int',
-         [r'error: creating array with negative size',  # for gcc
-          r'',  # for icc
-          ]),
+         [r'key_comparison_function_must_return_bool']),
 
         # Test that float does not work as a return type for key comparison.
         ('float',
-         [r'error: creating array with negative size',  # for gcc
-          r'',  # for icc
-          ]),
+         [r'key_comparison_function_must_return_bool']),
 
         # Test that void* does not work as a return type for key comparison.
         ('pointer',
-         [r'error: creating array with negative size',  # for gcc
-          r'',  # for icc
-          ]),
+         [r'key_comparison_function_must_return_bool']),
 
         # Test that bool does not work as a return type for compare-to
         # comparison.
         ('compare_to_bool',
-         [r'error: creating array with negative size',  # for gcc
-          r'',  # for icc
-          ]),
+         [r'key_comparison_function_must_return_bool']),
 
         # Test that int works as a return type for compare-to comparison.
         ('compare_to_int', None),  # None means compilation should succeed.
@@ -59,16 +51,16 @@ class BtreeNegativeUnitTest(googletest.TestCase):
         # Test that float does not work as a return type for compare-to
         # comparison.
         ('compare_to_float',
-         [r'error: creating array with negative size',  # for gcc
-          r'',  # for icc
-          ]),
+         [r'key_comparison_function_must_return_bool']),
 
         # Test that void* does not work as a return type for compare-to
         # comparison.
         ('compare_to_pointer',
-         [r'error: creating array with negative size',  # for gcc
-          r'',  # for icc
-          ]),
+         [r'key_comparison_function_must_return_bool']),
+
+        # Test that large node sizes do not compile.
+        ('large_nodesize',
+         [r'target_node_size_too_large']),
       ]
 
     # Runs the list of tests.

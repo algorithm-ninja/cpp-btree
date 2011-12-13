@@ -40,7 +40,11 @@ TEST_COMPARE_TO(int);
 #elif defined(TEST_compare_to_float)
 TEST_COMPARE_TO(float);
 #elif defined(TEST_compare_to_pointer)
-TEST_COMPARE_TO(pointer);
+TEST_COMPARE_TO(void*);
+#elif defined(TEST_large_nodesize)
+void LargeNode() {
+  util::btree::btree_set<int64, less<int64>, std::allocator<int64>, 10000> set;
+}
 #endif
 
 }  // namespace
