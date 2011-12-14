@@ -316,38 +316,6 @@ static bool btree_compare_keys(
   return key_comparer::bool_compare(comp, x, y);
 }
 
-// btree_is_node_big<> is a recursive template to determine whether a
-// node of TargetNodeSize bytes needs a larger base_fields type
-// (uint16, instead of uint8) to accomodate >= 256 values per node.
-template <int TargetNodeSize, int ValueSize>
-struct btree_is_node_big :
-      btree_is_node_big<(TargetNodeSize / 2), (ValueSize / 2)> {
-};
-template <int TargetNodeSize>
-struct btree_is_node_big<TargetNodeSize, 1> {
-  enum {
-    // In the base case, TargetNodeSize corresponds to single-byte
-    // entries and is the maximum number of values.
-    is_big = base::integral_constant<bool, (TargetNodeSize >= 256)>::value,
-  };
-};
-
-// A helper for sizing the btree node's base_fields.  The "type"
-// typedef in this struct is an integral type large enough to hold as
-// many ValueSize-values as will fit a node of TargetNodeSize bytes.
-template <int TargetNodeSize, int ValueSize>
-struct btree_base_field_type {
-  enum {
-    // "value_space" is the maximum leaf node count.  leaf nodes have
-    // a greatest maximum of the node types.
-    value_space = TargetNodeSize - 2 * sizeof(void*),
-  };
-  typedef typename base::if_<
-    btree_is_node_big<value_space, ValueSize>::is_big,
-    uint16,
-    uint8>::type type;
-};
-
 template <typename Key, typename Compare,
           typename Alloc, int TargetNodeSize, int ValueSize>
 struct btree_common_params {
@@ -365,12 +333,21 @@ struct btree_common_params {
   typedef Key key_type;
   typedef ssize_t size_type;
   typedef ptrdiff_t difference_type;
-  typedef typename btree_base_field_type<TargetNodeSize, ValueSize>::type
-      base_field_type;
 
   enum {
     kTargetNodeSize = TargetNodeSize,
+
+    // Available space for values.  This is largest for leaf nodes,
+    // which has overhead no fewer than two pointers.
+    kNodeValueSpace = TargetNodeSize - 2 * sizeof(void*),
   };
+
+  // This is an integral type large enough to hold as many
+  // ValueSize-values as will fit a node of TargetNodeSize bytes.
+  typedef typename base::if_<
+    (kNodeValueSpace / ValueSize) >= 256,
+    uint16,
+    uint8>::type node_count_type;
 };
 
 // A parameters structure for holding the type parameters for a btree_map.
@@ -541,7 +518,7 @@ class btree_node {
     linear_search_type, binary_search_type>::type search_type;
 
   struct base_fields {
-    typedef typename Params::base_field_type field_type;
+    typedef typename Params::node_count_type field_type;
 
     // A boolean indicating whether the node is a leaf or not.
     bool leaf;
@@ -1479,6 +1456,10 @@ class btree : public Params::key_compare {
   COMPILE_ASSERT(kNodeValues <
                  (1 << (8 * sizeof(typename base_fields::field_type))),
                  target_node_size_too_large);
+
+  // Test the assumption made in setting kNodeValueSpace.
+  COMPILE_ASSERT(sizeof(base_fields) >= 2 * sizeof(void*),
+                 node_space_assumption_incorrect);
 };
 
 ////
