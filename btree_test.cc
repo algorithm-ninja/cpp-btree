@@ -47,6 +47,25 @@ TEST(Btree, map_string_256) { MapTest<string, 256>(); }
 TEST(Btree, map_cord_256)   { MapTest<Cord, 256>(); }
 TEST(Btree, map_pair_256)   { MapTest<pair<int, int>, 256>(); }
 
+// Large-node tests
+TEST(Btree, map_int32_1024)   { MapTest<int32, 1024>(); }
+TEST(Btree, map_int32_1032)   { MapTest<int32, 1032>(); }
+TEST(Btree, map_int32_1040)   { MapTest<int32, 1040>(); }
+TEST(Btree, map_int32_1048)   { MapTest<int32, 1048>(); }
+TEST(Btree, map_int32_1056)   { MapTest<int32, 1056>(); }
+
+TEST(Btree, map_int32_2048)   { MapTest<int32, 2048>(); }
+TEST(Btree, map_int32_4096)   { MapTest<int32, 4096>(); }
+TEST(Btree, set_int32_1024)   { SetTest<int32, 1024>(); }
+TEST(Btree, set_int32_2048)   { SetTest<int32, 2048>(); }
+TEST(Btree, set_int32_4096)   { SetTest<int32, 4096>(); }
+TEST(Btree, map_string_1024)   { MapTest<string, 1024>(); }
+TEST(Btree, map_string_2048)   { MapTest<string, 2048>(); }
+TEST(Btree, map_string_4096)   { MapTest<string, 4096>(); }
+TEST(Btree, set_string_1024)   { SetTest<string, 1024>(); }
+TEST(Btree, set_string_2048)   { SetTest<string, 2048>(); }
+TEST(Btree, set_string_4096)   { SetTest<string, 4096>(); }
+
 template <typename K, int N>
 void MultiSetTest() {
   typedef ArenaAllocator<K, UnsafeArena> ArenaAlloc;
@@ -76,6 +95,20 @@ TEST(Btree, multimap_int64_256)  { MultiMapTest<int64, 256>(); }
 TEST(Btree, multimap_string_256) { MultiMapTest<string, 256>(); }
 TEST(Btree, multimap_cord_256)   { MultiMapTest<Cord, 256>(); }
 TEST(Btree, multimap_pair_256)   { MultiMapTest<pair<int, int>, 256>(); }
+
+// Large-node tests
+TEST(Btree, multimap_int32_1024)   { MultiMapTest<int32, 1024>(); }
+TEST(Btree, multimap_int32_2048)   { MultiMapTest<int32, 2048>(); }
+TEST(Btree, multimap_int32_4096)   { MultiMapTest<int32, 4096>(); }
+TEST(Btree, multiset_int32_1024)   { MultiSetTest<int32, 1024>(); }
+TEST(Btree, multiset_int32_2048)   { MultiSetTest<int32, 2048>(); }
+TEST(Btree, multiset_int32_4096)   { MultiSetTest<int32, 4096>(); }
+TEST(Btree, multimap_string_1024)   { MultiMapTest<string, 1024>(); }
+TEST(Btree, multimap_string_2048)   { MultiMapTest<string, 2048>(); }
+TEST(Btree, multimap_string_4096)   { MultiMapTest<string, 4096>(); }
+TEST(Btree, multiset_string_1024)   { MultiSetTest<string, 1024>(); }
+TEST(Btree, multiset_string_2048)   { MultiSetTest<string, 2048>(); }
+TEST(Btree, multiset_string_4096)   { MultiSetTest<string, 4096>(); }
 
 // Verify that swapping btrees swaps the key comparision functors.
 struct SubstringLess {
@@ -154,7 +187,6 @@ TEST(Btree, IteratorIncrementBy) {
     EXPECT_EQ(*a, *b) << ": i=" << i;
   }
 }
-
 
 } // namespace
 } // namespace btree

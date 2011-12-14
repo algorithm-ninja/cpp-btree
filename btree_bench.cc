@@ -401,7 +401,10 @@ typedef multimap<Cord, intptr_t> stl_multimap_cord;
   MY_BENCHMARK_TYPES2(value, name, 416); \
   MY_BENCHMARK_TYPES2(value, name, 448); \
   MY_BENCHMARK_TYPES2(value, name, 480); \
-  MY_BENCHMARK_TYPES2(value, name, 512)
+  MY_BENCHMARK_TYPES2(value, name, 512); \
+  MY_BENCHMARK_TYPES2(value, name, 1024); \
+  MY_BENCHMARK_TYPES2(value, name, 1536); \
+  MY_BENCHMARK_TYPES2(value, name, 2048)
 
 MY_BENCHMARK_TYPES(int32, int32);
 MY_BENCHMARK_TYPES(int64, int64);
@@ -433,10 +436,14 @@ MY_BENCHMARK_TYPES(Cord, cord);
   MY_BENCHMARK4(tree ## _416_ ## type, name, func); \
   MY_BENCHMARK4(tree ## _448_ ## type, name, func); \
   MY_BENCHMARK4(tree ## _480_ ## type, name, func); \
-  MY_BENCHMARK4(tree ## _512_ ## type, name, func)
+  MY_BENCHMARK4(tree ## _512_ ## type, name, func); \
+  MY_BENCHMARK4(tree ## _1024_ ## type, name, func); \
+  MY_BENCHMARK4(tree ## _1536_ ## type, name, func); \
+  MY_BENCHMARK4(tree ## _2048_ ## type, name, func)
 #else
 #define MY_BENCHMARK3(tree, type, name, func) \
-  MY_BENCHMARK4(tree ## _256_ ## type, name, func)
+  MY_BENCHMARK4(tree ## _256_ ## type, name, func); \
+  MY_BENCHMARK4(tree ## _2048_ ## type, name, func)
 #endif
 
 #define MY_BENCHMARK2(type, name, func)    \

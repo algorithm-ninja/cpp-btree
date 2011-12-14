@@ -43,7 +43,10 @@ TEST_COMPARE_TO(float);
 TEST_COMPARE_TO(void*);
 #elif defined(TEST_large_nodesize)
 void LargeNode() {
-  util::btree::btree_set<int64, less<int64>, std::allocator<int64>, 10000> set;
+  // (1 << 20) with 8-byte values is 2^17 values per node, which
+  // overflows the uint16 of btree<Params>::node_type::base_fields.
+  util::btree::btree_set<int64, less<int64>, std::allocator<int64>, 1 << 20>
+      large_node_set;
 }
 #endif
 

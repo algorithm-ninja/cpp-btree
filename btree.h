@@ -316,8 +316,40 @@ static bool btree_compare_keys(
   return key_comparer::bool_compare(comp, x, y);
 }
 
+// btree_is_node_big<> is a recursive template to determine whether a
+// node of TargetNodeSize bytes needs a larger base_fields type
+// (uint16, instead of uint8) to accomodate >= 256 values per node.
+template <int TargetNodeSize, int ValueSize>
+struct btree_is_node_big :
+      btree_is_node_big<(TargetNodeSize / 2), (ValueSize / 2)> {
+};
+template <int TargetNodeSize>
+struct btree_is_node_big<TargetNodeSize, 1> {
+  enum {
+    // In the base case, TargetNodeSize corresponds to single-byte
+    // entries and is the maximum number of values.
+    is_big = base::integral_constant<bool, (TargetNodeSize >= 256)>::value,
+  };
+};
+
+// A helper for sizing the btree node's base_fields.  The "type"
+// typedef in this struct is an integral type large enough to hold as
+// many ValueSize-values as will fit a node of TargetNodeSize bytes.
+template <int TargetNodeSize, int ValueSize>
+struct btree_base_field_type {
+  enum {
+    // "value_space" is the maximum leaf node count.  leaf nodes have
+    // a greatest maximum of the node types.
+    value_space = TargetNodeSize - 2 * sizeof(void*),
+  };
+  typedef typename base::if_<
+    btree_is_node_big<value_space, ValueSize>::is_big,
+    uint16,
+    uint8>::type type;
+};
+
 template <typename Key, typename Compare,
-          typename Alloc, int TargetNodeSize>
+          typename Alloc, int TargetNodeSize, int ValueSize>
 struct btree_common_params {
   // If Compare is derived from btree_key_compare_to_tag then use it as the
   // key_compare type. Otherwise, use btree_key_compare_to_adapter<> which will
@@ -333,6 +365,8 @@ struct btree_common_params {
   typedef Key key_type;
   typedef ssize_t size_type;
   typedef ptrdiff_t difference_type;
+  typedef typename btree_base_field_type<TargetNodeSize, ValueSize>::type
+      base_field_type;
 
   enum {
     kTargetNodeSize = TargetNodeSize,
@@ -343,7 +377,8 @@ struct btree_common_params {
 template <typename Key, typename Data, typename Compare,
           typename Alloc, int TargetNodeSize>
 struct btree_map_params
-    : public btree_common_params<Key, Compare, Alloc, TargetNodeSize> {
+    : public btree_common_params<Key, Compare, Alloc, TargetNodeSize,
+                                 sizeof(Key) + sizeof(Data)> {
   typedef Data data_type;
   typedef Data mapped_type;
   typedef pair<const Key, data_type> value_type;
@@ -368,7 +403,8 @@ struct btree_map_params
 // A parameters structure for holding the type parameters for a btree_set.
 template <typename Key, typename Compare, typename Alloc, int TargetNodeSize>
 struct btree_set_params
-    : public btree_common_params<Key, Compare, Alloc, TargetNodeSize> {
+    : public btree_common_params<Key, Compare, Alloc, TargetNodeSize,
+                                 sizeof(Key)> {
   typedef base::false_type data_type;
   typedef base::false_type mapped_type;
   typedef Key value_type;
@@ -505,14 +541,16 @@ class btree_node {
     linear_search_type, binary_search_type>::type search_type;
 
   struct base_fields {
+    typedef typename Params::base_field_type field_type;
+
     // A boolean indicating whether the node is a leaf or not.
-    uint8 leaf;
+    bool leaf;
     // The position of the node in the node's parent.
-    uint8 position;
+    field_type position;
     // The maximum number of values the node can hold.
-    uint8 max_count;
+    field_type max_count;
     // The count of the number of values in the node.
-    uint8 count;
+    field_type count;
     // A pointer to the node's parent.
     btree_node *parent;
   };
@@ -1437,9 +1475,10 @@ class btree : public Params::key_compare {
       key_comparison_function_must_return_bool);
 
   // Note: We insist on kTargetValues, which is computed from
-  // Params::kTargetNodeSize, falling under 256 because of the uint8
-  // fields of base_fields.
-  COMPILE_ASSERT(kNodeValues < 256, target_node_size_too_large);
+  // Params::kTargetNodeSize, must fit the base_fields::field_type.
+  COMPILE_ASSERT(kNodeValues <
+                 (1 << (8 * sizeof(typename base_fields::field_type))),
+                 target_node_size_too_large);
 };
 
 ////
