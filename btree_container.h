@@ -106,6 +106,23 @@ class btree_container {
   double fullness() const { return tree_.fullness(); }
   double overhead() const { return tree_.overhead(); }
 
+  bool operator==(const self_type& x) const {
+    if (size() != x.size()) {
+      return false;
+    }
+    for (const_iterator i = begin(), xi = x.begin(); i != end(); ++i, ++xi) {
+      if (*i != *xi) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  bool operator!=(const self_type& other) const {
+    return !operator==(other);
+  }
+
+
  protected:
   Tree tree_;
 };

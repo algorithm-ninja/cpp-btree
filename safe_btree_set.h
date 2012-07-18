@@ -1,9 +1,20 @@
-// Copyright 2007 Google Inc. All Rights Reserved.
+// Copyright 2007, 2012 Google Inc. All Rights Reserved.
 // Author: pmattis@google.com (Peter Mattis)
 //
 // The safe_btree_set<> is like btree_set<> except that it removes the caveat
 // about insertion and deletion invalidating existing iterators at a small cost
 // in making iterators larger and slower.
+//
+// Revalidation occurs whenever an iterator is accessed.  References
+// and pointers returned by safe_btree_map<> iterators are not stable,
+// they are potentially invalidated by any non-const method on the set.
+//
+// BEGIN INCORRECT EXAMPLE
+//   for (auto i = safe_set->begin(); i != safe_set->end(); ++i) {
+//     const T &value = *i;  // DO NOT DO THIS
+//     [code that modifies safe_set and uses value];
+//   }
+// END INCORRECT EXAMPLE
 
 #ifndef UTIL_BTREE_SAFE_BTREE_SET_H__
 #define UTIL_BTREE_SAFE_BTREE_SET_H__
@@ -18,7 +29,7 @@
 namespace util {
 namespace btree {
 
-// The safe_btree_set class is needed mainly for it's constructors.
+// The safe_btree_set class is needed mainly for its constructors.
 template <typename Key,
           typename Compare = less<Key>,
           typename Alloc = std::allocator<Key>,

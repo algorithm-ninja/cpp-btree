@@ -1,4 +1,4 @@
-// Copyright 2007 Google Inc. All Rights Reserved.
+// Copyright 2007, 2012 Google Inc. All Rights Reserved.
 // Author: pmattis@google.com (Peter Mattis)
 //
 // A safe_btree<> wraps around a btree<> and removes the caveat that insertion
@@ -8,6 +8,11 @@
 // it was last validated and the key the underlying btree<>::iterator points
 // to. If an iterator is accessed and its generation differs from the tree
 // generation it is revalidated.
+//
+// References and pointers returned by safe_btree iterators are not safe.
+//
+// See the incorrect usage examples mentioned in safe_btree_set.h and
+// safe_btree_map.h.
 
 #ifndef UTIL_BTREE_SAFE_BTREE_H__
 #define UTIL_BTREE_SAFE_BTREE_H__
@@ -106,10 +111,14 @@ class safe_btree_iterator {
   const key_type& key() const {
     return key_;
   }
+  // This reference value is potentially invalidated by any non-const
+  // method on the tree; it is NOT safe.
   reference operator*() const {
     DCHECK_GT(generation_, 0);
     return iter().operator*();
   }
+  // This pointer value is potentially invalidated by any non-const
+  // method on the tree; it is NOT safe.
   pointer operator->() const {
     DCHECK_GT(generation_, 0);
     return iter().operator->();

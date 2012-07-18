@@ -56,6 +56,60 @@ TEST(SafeBtree, map_string_256) { MapTest<string, 256>(); }
 TEST(SafeBtree, map_cord_256)   { MapTest<Cord, 256>(); }
 TEST(SafeBtree, map_pair_256)   { MapTest<pair<int, int>, 256>(); }
 
+TEST(SafeBtree, Comparison) {
+  const int kSetSize = 1201;
+  safe_btree_set<int64> my_set;
+  for (int i = 0; i < kSetSize; ++i) {
+    my_set.insert(i);
+  }
+  safe_btree_set<int64> my_set_copy(my_set);
+  EXPECT_TRUE(my_set_copy == my_set);
+  EXPECT_TRUE(my_set == my_set_copy);
+  EXPECT_FALSE(my_set_copy != my_set);
+  EXPECT_FALSE(my_set != my_set_copy);
+
+  my_set.insert(kSetSize);
+  EXPECT_FALSE(my_set_copy == my_set);
+  EXPECT_FALSE(my_set == my_set_copy);
+  EXPECT_TRUE(my_set_copy != my_set);
+  EXPECT_TRUE(my_set != my_set_copy);
+
+  my_set.erase(kSetSize - 1);
+  EXPECT_FALSE(my_set_copy == my_set);
+  EXPECT_FALSE(my_set == my_set_copy);
+  EXPECT_TRUE(my_set_copy != my_set);
+  EXPECT_TRUE(my_set != my_set_copy);
+
+  safe_btree_map<string, int64> my_map;
+  for (int i = 0; i < kSetSize; ++i) {
+    my_map[string(i, 'a')] = i;
+  }
+  safe_btree_map<string, int64> my_map_copy(my_map);
+  EXPECT_TRUE(my_map_copy == my_map);
+  EXPECT_TRUE(my_map == my_map_copy);
+  EXPECT_FALSE(my_map_copy != my_map);
+  EXPECT_FALSE(my_map != my_map_copy);
+
+  ++my_map_copy[string(7, 'a')];
+  EXPECT_FALSE(my_map_copy == my_map);
+  EXPECT_FALSE(my_map == my_map_copy);
+  EXPECT_TRUE(my_map_copy != my_map);
+  EXPECT_TRUE(my_map != my_map_copy);
+
+  my_map_copy = my_map;
+  my_map["hello"] = kSetSize;
+  EXPECT_FALSE(my_map_copy == my_map);
+  EXPECT_FALSE(my_map == my_map_copy);
+  EXPECT_TRUE(my_map_copy != my_map);
+  EXPECT_TRUE(my_map != my_map_copy);
+
+  my_map.erase(string(kSetSize - 1, 'a'));
+  EXPECT_FALSE(my_map_copy == my_map);
+  EXPECT_FALSE(my_map == my_map_copy);
+  EXPECT_TRUE(my_map_copy != my_map);
+  EXPECT_TRUE(my_map != my_map_copy);
+}
+
 } // namespace
 } // namespace btree
 } // namespace util
