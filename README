@@ -1,0 +1,15 @@
+This library is a C++ template library and, as such, there is no
+library to build and install.
+
+----
+
+To build and run the provided tests, however, you will need to install
+CMake and the Google C++ Test framework.
+
+Download CMake from http://www.cmake.org
+
+Download the GoogleTest framework from http://code.google.com/p/googletest
+
+export GTEST_ROOT=/path/for/gtest-x.y
+
+cmake . -Dbuild_tests=ON

@@ -1,4 +1,4 @@
-// Copyright 2007 Google Inc. All Rights Reserved.
+// Copyright 2007, 2012 Google Inc. All Rights Reserved.
 // Author: jmacd@google.com (Josh MacDonald)
 // Author: pmattis@google.com (Peter Mattis)
 //
@@ -18,16 +18,15 @@
 #include <string>
 #include <utility>
 
-#include "util/btree/btree.h"  // IWYU pragma: export
-#include "util/btree/btree_container.h"  // IWYU pragma: export
+#include "btree.h"
+#include "btree_container.h"
 
-namespace util {
 namespace btree {
 
 // The btree_map class is needed mainly for it's constructors.
 template <typename Key, typename Value,
-          typename Compare = less<Key>,
-          typename Alloc = std::allocator<pair<const Key, Value> >,
+          typename Compare = std::less<Key>,
+          typename Alloc = std::allocator<std::pair<const Key, Value> >,
           int TargetNodeSize = 256>
 class btree_map : public btree_map_container<
   btree<btree_map_params<Key, Value, Compare, Alloc, TargetNodeSize> > > {
@@ -71,8 +70,8 @@ inline void swap(btree_map<K, V, C, A, N> &x,
 
 // The btree_multimap class is needed mainly for it's constructors.
 template <typename Key, typename Value,
-          typename Compare = less<Key>,
-          typename Alloc = std::allocator<pair<const Key, Value> >,
+          typename Compare = std::less<Key>,
+          typename Alloc = std::allocator<std::pair<const Key, Value> >,
           int TargetNodeSize = 256>
 class btree_multimap : public btree_multi_container<
   btree<btree_map_params<Key, Value, Compare, Alloc, TargetNodeSize> > > {
@@ -117,6 +116,5 @@ inline void swap(btree_multimap<K, V, C, A, N> &x,
 }
 
 } // namespace btree
-} // namespace util
 
 #endif  // UTIL_BTREE_BTREE_MAP_H__

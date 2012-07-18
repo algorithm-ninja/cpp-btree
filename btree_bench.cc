@@ -26,7 +26,6 @@
 
 DECLARE_int32(benchmark_max_iters);
 
-namespace util {
 namespace btree {
 namespace {
 
@@ -480,7 +479,6 @@ MY_BENCHMARK(multimap_cord);
 
 } // namespace
 } // namespace btree
-} // namespace util
 
 int main(int argc, char **argv) {
   FLAGS_logtostderr = true;

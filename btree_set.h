@@ -14,15 +14,14 @@
 #include <memory>
 #include <string>
 
-#include "util/btree/btree.h"  // IWYU pragma: export
-#include "util/btree/btree_container.h"  // IWYU pragma: export
+#include "btree.h"
+#include "btree_container.h"
 
-namespace util {
 namespace btree {
 
 // The btree_set class is needed mainly for it's constructors.
 template <typename Key,
-          typename Compare = less<Key>,
+          typename Compare = std::less<Key>,
           typename Alloc = std::allocator<Key>,
           int TargetNodeSize = 256>
 class btree_set : public btree_unique_container<
@@ -65,7 +64,7 @@ inline void swap(btree_set<K, C, A, N> &x, btree_set<K, C, A, N> &y) {
 
 // The btree_multiset class is needed mainly for it's constructors.
 template <typename Key,
-          typename Compare = less<Key>,
+          typename Compare = std::less<Key>,
           typename Alloc = std::allocator<Key>,
           int TargetNodeSize = 256>
 class btree_multiset : public btree_multi_container<
@@ -108,6 +107,5 @@ inline void swap(btree_multiset<K, C, A, N> &x,
 }
 
 } // namespace btree
-} // namespace util
 
 #endif  // UTIL_BTREE_BTREE_SET_H__

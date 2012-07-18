@@ -8,9 +8,8 @@
 #include <iosfwd>
 #include <utility>
 
-#include "util/btree/btree.h"  // IWYU pragma: export
+#include "btree.h"
 
-namespace util {
 namespace btree {
 
 // A common base class for btree_set, btree_map, btree_multiset and
@@ -70,10 +69,10 @@ class btree_container {
   const_iterator upper_bound(const key_type &key) const {
     return tree_.upper_bound(key);
   }
-  pair<iterator,iterator> equal_range(const key_type &key) {
+  std::pair<iterator,iterator> equal_range(const key_type &key) {
     return tree_.equal_range(key);
   }
-  pair<const_iterator,const_iterator> equal_range(const key_type &key) const {
+  std::pair<const_iterator,const_iterator> equal_range(const key_type &key) const {
     return tree_.equal_range(key);
   }
 
@@ -84,7 +83,7 @@ class btree_container {
   void swap(self_type &x) {
     tree_.swap(x.tree_);
   }
-  void dump(ostream &os) const {
+  void dump(std::ostream &os) const {
     tree_.dump(os);
   }
   void verify() const {
@@ -128,7 +127,7 @@ class btree_container {
 };
 
 template <typename T>
-inline ostream& operator<<(ostream &os, const btree_container<T> &b) {
+inline std::ostream& operator<<(std::ostream &os, const btree_container<T> &b) {
   b.dump(os);
   return os;
 }
@@ -181,7 +180,7 @@ class btree_unique_container : public btree_container<Tree> {
   }
 
   // Insertion routines.
-  pair<iterator,bool> insert(const value_type &x) {
+  std::pair<iterator,bool> insert(const value_type &x) {
     return this->tree_.insert_unique(x);
   }
   iterator insert(iterator position, const value_type &x) {
@@ -230,7 +229,7 @@ class btree_map_container : public btree_unique_container<Tree> {
         : key(k) {
     }
     value_type operator*() const {
-      return make_pair(key, data_type());
+      return std::make_pair(key, data_type());
     }
     const key_type &key;
   };
@@ -337,6 +336,5 @@ class btree_multi_container : public btree_container<Tree> {
 };
 
 } // namespace btree
-} // namespace util
 
 #endif  // UTIL_BTREE_BTREE_CONTAINER_H__

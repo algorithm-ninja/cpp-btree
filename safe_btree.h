@@ -21,11 +21,8 @@
 #include <iosfwd>
 #include <utility>
 
-#include "base/integral_types.h"
-#include "base/logging.h"
-#include "util/btree/btree.h"
+#include "btree.h"
 
-namespace util {
 namespace btree {
 
 template <typename Tree, typename Iterator>
@@ -77,7 +74,7 @@ class safe_btree_iterator {
   }
 
   Tree* tree() const { return tree_; }
-  int64 generation() const { return generation_; }
+  int64_t generation() const { return generation_; }
 
   Iterator* mutable_iter() const {
     if (generation_ != tree_->generation()) {
@@ -114,13 +111,13 @@ class safe_btree_iterator {
   // This reference value is potentially invalidated by any non-const
   // method on the tree; it is NOT safe.
   reference operator*() const {
-    DCHECK_GT(generation_, 0);
+    assert(generation_ > 0);
     return iter().operator*();
   }
   // This pointer value is potentially invalidated by any non-const
   // method on the tree; it is NOT safe.
   pointer operator->() const {
-    DCHECK_GT(generation_, 0);
+    assert(generation_ > 0);
     return iter().operator->();
   }
 
@@ -148,7 +145,7 @@ class safe_btree_iterator {
 
  private:
   // The generation of the tree when "iter" was updated.
-  mutable int64 generation_;
+  mutable int64_t generation_;
   // The key the iterator points to.
   mutable key_type key_;
   // The underlying iterator.
@@ -236,14 +233,14 @@ class safe_btree {
   const_iterator upper_bound(const key_type &key) const {
     return const_iterator(this, tree_.upper_bound(key));
   }
-  pair<iterator, iterator> equal_range(const key_type &key) {
-    pair<tree_iterator, tree_iterator> p = tree_.equal_range(key);
-    return make_pair(iterator(this, p.first),
+  std::pair<iterator, iterator> equal_range(const key_type &key) {
+    std::pair<tree_iterator, tree_iterator> p = tree_.equal_range(key);
+    return std::make_pair(iterator(this, p.first),
                      iterator(this, p.second));
   }
-  pair<const_iterator, const_iterator> equal_range(const key_type &key) const {
-    pair<tree_const_iterator, tree_const_iterator> p = tree_.equal_range(key);
-    return make_pair(const_iterator(this, p.first),
+  std::pair<const_iterator, const_iterator> equal_range(const key_type &key) const {
+    std::pair<tree_const_iterator, tree_const_iterator> p = tree_.equal_range(key);
+    return std::make_pair(const_iterator(this, p.first),
                      const_iterator(this, p.second));
   }
   iterator find_unique(const key_type &key) {
@@ -267,15 +264,15 @@ class safe_btree {
 
   // Insertion routines.
   template <typename ValuePointer>
-  pair<iterator, bool> insert_unique(const key_type &key, ValuePointer value) {
-    pair<tree_iterator, bool> p = tree_.insert_unique(key, value);
+  std::pair<iterator, bool> insert_unique(const key_type &key, ValuePointer value) {
+    std::pair<tree_iterator, bool> p = tree_.insert_unique(key, value);
     generation_ += p.second;
-    return make_pair(iterator(this, p.first), p.second);
+    return std::make_pair(iterator(this, p.first), p.second);
   }
-  pair<iterator, bool> insert_unique(const value_type &v) {
-    pair<tree_iterator, bool> p = tree_.insert_unique(v);
+  std::pair<iterator, bool> insert_unique(const value_type &v) {
+    std::pair<tree_iterator, bool> p = tree_.insert_unique(v);
     generation_ += p.second;
-    return make_pair(iterator(this, p.first), p.second);
+    return std::make_pair(iterator(this, p.first), p.second);
   }
   iterator insert_unique(iterator position, const value_type &v) {
     tree_iterator tree_pos = position.iter();
@@ -351,13 +348,13 @@ class safe_btree {
     ++x.generation_;
     tree_.swap(x.tree_);
   }
-  void dump(ostream &os) const {
+  void dump(std::ostream &os) const {
     tree_.dump(os);
   }
   void verify() const {
     tree_.verify();
   }
-  int64 generation() const {
+  int64_t generation() const {
     return generation_;
   }
   key_compare key_comp() const { return tree_.key_comp(); }
@@ -379,10 +376,9 @@ class safe_btree {
 
  private:
   btree_type tree_;
-  int64 generation_;
+  int64_t generation_;
 };
 
 }  // namespace btree
-}  // namespace util
 
 #endif  // UTIL_BTREE_SAFE_BTREE_H__

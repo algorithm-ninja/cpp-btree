@@ -22,16 +22,15 @@
 #include <functional>
 #include <memory>
 
-#include "util/btree/btree_container.h"
-#include "util/btree/btree_set.h"
-#include "util/btree/safe_btree.h"
+#include "btree_container.h"
+#include "btree_set.h"
+#include "safe_btree.h"
 
-namespace util {
 namespace btree {
 
 // The safe_btree_set class is needed mainly for its constructors.
 template <typename Key,
-          typename Compare = less<Key>,
+          typename Compare = std::less<Key>,
           typename Alloc = std::allocator<Key>,
           int TargetNodeSize = 256>
 class safe_btree_set : public btree_unique_container<
@@ -74,6 +73,5 @@ inline void swap(safe_btree_set<K, C, A, N> &x,
 }
 
 } // namespace btree
-} // namespace util
 
 #endif  // UTIL_BTREE_SAFE_BTREE_SET_H__
