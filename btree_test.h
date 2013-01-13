@@ -565,65 +565,6 @@ std::vector<V> GenerateValues(int n) {
   return vec;
 }
 
-template <typename K>
-double ContainerInfo(const std::set<K> &s) {
-  int sizeof_node = sizeof(std::_Rb_tree_node<K>);
-  int bytes_used = sizeof(s) + s.size() * sizeof_node;
-  double bytes_per_value = (double) bytes_used / s.size();
-  std::cout << " size=" << s.size()
-          << " bytes-used=" << bytes_used
-          << " bytes-per-value=" << bytes_per_value;
-  return bytes_per_value;
-}
-
-template <typename K>
-double ContainerInfo(const std::multiset<K> &s) {
-  int sizeof_node = sizeof(std::_Rb_tree_node<K>);
-  int bytes_used = sizeof(s) + s.size() * sizeof_node;
-  double bytes_per_value = (double) bytes_used / s.size();
-  std::cout << " size=" << s.size()
-          << " bytes-used=" << bytes_used
-          << " bytes-per-value=" << bytes_per_value;
-  return bytes_per_value;
-}
-
-template <typename K, typename V>
-double ContainerInfo(const std::map<K, V> &m) {
-  int sizeof_node = sizeof(std::_Rb_tree_node<std::pair<K, V> >);
-  int bytes_used = sizeof(m) + m.size() * sizeof_node;
-  double bytes_per_value = (double) bytes_used / m.size();
-  std::cout << " size=" << m.size()
-          << " bytes-used=" << bytes_used
-          << " bytes-per-value=" << bytes_per_value;
-  return bytes_per_value;
-}
-
-template <typename K, typename V>
-double ContainerInfo(const std::multimap<K, V> &m) {
-  int sizeof_node = sizeof(std::_Rb_tree_node<std::pair<K, V> >);
-  int bytes_used = sizeof(m) + m.size() * sizeof_node;
-  double bytes_per_value = (double) bytes_used / m.size();
-  std::cout << " size=" << m.size()
-          << " bytes-used=" << bytes_used
-          << " bytes-per-value=" << bytes_per_value;
-  return bytes_per_value;
-}
-
-template <typename P>
-double ContainerInfo(const btree_container<P> &b) {
-  double bytes_used = sizeof(b) + b.bytes_used();
-  double bytes_per_value = (double) bytes_used / b.size();
-  std::cout << " size=" << b.size()
-          << " bytes-used=" << bytes_used
-          << " bytes-per-value=" << bytes_per_value
-          << " height=" << b.height()
-          << " internal-nodes=" << b.internal_nodes()
-          << " leaf-nodes=" << b.leaf_nodes()
-          << " fullness=" << b.fullness()
-          << " overhead=" << b.overhead();
-  return bytes_per_value;
-}
-
 template <typename T, typename V>
 void DoTest(const char *name, T *b, const std::vector<V> &values) {
   typename KeyOfValue<typename T::key_type, V>::type key_of_value;

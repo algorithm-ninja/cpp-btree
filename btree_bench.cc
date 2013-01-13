@@ -3,36 +3,160 @@
 // Author: pmattis@google.com (Peter Mattis)
 
 #include <stdint.h>
+#include <stdlib.h>
 #include <algorithm>
 #include <functional>
 #include <map>
 #include <set>
 #include <string>
+#include <sys/time.h>
+#include <type_traits>
 #include <vector>
 
-#include "base/commandlineflags.h"
-#include "base/init_google.h"
-#include "base/integral_types.h"
-#include "base/logging.h"
-#include "base/stringprintf.h"
-#include "base/type_traits.h"
-#include "strings/cord.h"
-#include "testing/base/public/benchmark.h"
-#include "testing/base/public/googletest.h"
-#include "util/btree/btree_map.h"
-#include "util/btree/btree_set.h"
-#include "util/btree/btree_test.h"
-#include "util/random/acmrandom.h"
+#include "gflags/gflags.h"
+#include "btree_map.h"
+#include "btree_set.h"
+#include "btree_test.h"
 
-DECLARE_int32(benchmark_max_iters);
+DEFINE_int32(test_random_seed, 123456789, "Seed for srand()");
+DEFINE_int32(benchmark_max_iters, 10000000, "Maximum test iterations");
+DEFINE_int32(benchmark_min_iters, 100, "Minimum test iterations");
+DEFINE_int32(benchmark_target_seconds, 1,
+	     "Attempt to benchmark for this many seconds");
+
+using std::allocator;
+using std::less;
+using std::map;
+using std::max;
+using std::min;
+using std::multimap;
+using std::multiset;
+using std::set;
+using std::string;
+using std::vector;
 
 namespace btree {
 namespace {
 
+struct RandGen {
+  typedef ptrdiff_t result_type;
+  RandGen(result_type seed) {
+    srand(seed);
+  }
+  result_type operator()(result_type l) {
+    return rand() % l;
+  }
+};
+
+struct BenchmarkRun {
+  BenchmarkRun(const char *name, void (*func)(int));
+  void Run();
+  void Stop();
+  void Start();
+  void Reset();
+
+  BenchmarkRun *next_benchmark;
+  const char *benchmark_name;
+  void (*benchmark_func)(int);
+  int64_t accum_micros;
+  int64_t last_started;
+};
+
+BenchmarkRun *first_benchmark;
+BenchmarkRun *current_benchmark;
+
+int64_t get_micros () {
+  timeval tv;
+  gettimeofday(&tv, NULL);
+  return tv.tv_sec * 1000000 + tv.tv_usec;
+}
+
+BenchmarkRun::BenchmarkRun(const char *name, void (*func)(int))
+  : next_benchmark(first_benchmark),
+    benchmark_name(name),
+    benchmark_func(func),
+    accum_micros(0),
+    last_started(0) {
+  first_benchmark = this;
+}
+
+#define BTREE_BENCHMARK(name) \
+  BTREE_BENCHMARK2(#name, name, __COUNTER__)
+#define BTREE_BENCHMARK2(name, func, counter)	\
+  BTREE_BENCHMARK3(name, func, counter)
+#define BTREE_BENCHMARK3(name, func, counter)	\
+  BenchmarkRun bench ## counter (name, func)
+
+void StopBenchmarkTiming() {
+  current_benchmark->Stop();
+}
+
+void StartBenchmarkTiming() {
+  current_benchmark->Start();
+}
+
+void RunBenchmarks() {
+  for (BenchmarkRun *bench = first_benchmark; bench; 
+       bench = bench->next_benchmark) {
+    bench->Run();
+  }
+}
+
+void BenchmarkRun::Start() {
+  assert(!last_started);
+  last_started = get_micros();
+}
+
+void BenchmarkRun::Stop() {
+  if (last_started == 0) {
+    return;
+  }
+  accum_micros += get_micros() - last_started;
+  last_started = 0;
+}
+
+void BenchmarkRun::Reset() {
+  last_started = 0;
+  accum_micros = 0;
+}
+
+void BenchmarkRun::Run() {
+  assert(current_benchmark == NULL);
+  current_benchmark = this;
+  int iters = FLAGS_benchmark_min_iters;
+  for (;;) {
+    Reset();
+    Start();
+    benchmark_func(iters);
+    Stop();
+    if (accum_micros > FLAGS_benchmark_target_seconds * 1000000 ||
+	iters >= FLAGS_benchmark_max_iters) {
+      break;
+    } else if (accum_micros == 0) {
+      iters *= 100;
+    } else {
+      int64_t target_micros = FLAGS_benchmark_target_seconds * 1000000;
+      iters = target_micros * iters / accum_micros;
+    }
+    iters = min(iters, FLAGS_benchmark_max_iters);
+  }
+  fprintf(stdout, "%s\t%qu\t%qu\n", 
+	  benchmark_name, 
+	  accum_micros * 1000 / iters, 
+	  iters);
+  current_benchmark = NULL;
+}
+
+// Used to avoid compiler optimizations for these benchmarks.
+template <typename T>
+void sink(const T& t0) {
+  volatile T t = t0;
+}
+
 // Benchmark insertion of values into a container.
 template <typename T>
 void BM_Insert(int n) {
-  typedef typename base::remove_const<typename T::value_type>::type V;
+  typedef typename std::remove_const<typename T::value_type>::type V;
   typename KeyOfValue<typename T::key_type, V>::type key_of_value;
 
   // Disable timing while we perform some initialization.
@@ -43,7 +167,6 @@ void BM_Insert(int n) {
   for (int i = 0; i < values.size(); i++) {
     container.insert(values[i]);
   }
-  SetBenchmarkLabel(StringPrintf("  %0.2f", ContainerInfo(container)));
 
   for (int i = 0; i < n; ) {
     // Remove and re-insert 10% of the keys
@@ -70,7 +193,7 @@ void BM_Insert(int n) {
 // Benchmark lookup of values in a container.
 template <typename T>
 void BM_Lookup(int n) {
-  typedef typename base::remove_const<typename T::value_type>::type V;
+  typedef typename std::remove_const<typename T::value_type>::type V;
   typename KeyOfValue<typename T::key_type, V>::type key_of_value;
 
   // Disable timing while we perform some initialization.
@@ -82,7 +205,6 @@ void BM_Lookup(int n) {
   for (int i = 0; i < values.size(); i++) {
     container.insert(values[i]);
   }
-  SetBenchmarkLabel(StringPrintf("  %0.2f", ContainerInfo(container)));
 
   V r = V();
 
@@ -95,7 +217,7 @@ void BM_Lookup(int n) {
 
   StopBenchmarkTiming();
 
-  VLOG(4) << r; // Keep compiler from optimizing away r.
+  sink(r); // Keep compiler from optimizing away r.
 }
 
 // Benchmark lookup of values in a full container, meaning that values
@@ -103,7 +225,7 @@ void BM_Lookup(int n) {
 // yields a full tree.
 template <typename T>
 void BM_FullLookup(int n) {
-  typedef typename base::remove_const<typename T::value_type>::type V;
+  typedef typename std::remove_const<typename T::value_type>::type V;
   typename KeyOfValue<typename T::key_type, V>::type key_of_value;
 
   // Disable timing while we perform some initialization.
@@ -117,7 +239,6 @@ void BM_FullLookup(int n) {
   for (int i = 0; i < sorted.size(); i++) {
     container.insert(sorted[i]);
   }
-  SetBenchmarkLabel(StringPrintf("  %0.2f", ContainerInfo(container)));
 
   V r = V();
 
@@ -130,13 +251,13 @@ void BM_FullLookup(int n) {
 
   StopBenchmarkTiming();
 
-  VLOG(4) << r; // Keep compiler from optimizing away r.
+  sink(r); // Keep compiler from optimizing away r.
 }
 
 // Benchmark deletion of values from a container.
 template <typename T>
 void BM_Delete(int n) {
-  typedef typename base::remove_const<typename T::value_type>::type V;
+  typedef typename std::remove_const<typename T::value_type>::type V;
   typename KeyOfValue<typename T::key_type, V>::type key_of_value;
 
   // Disable timing while we perform some initialization.
@@ -147,7 +268,6 @@ void BM_Delete(int n) {
   for (int i = 0; i < values.size(); i++) {
     container.insert(values[i]);
   }
-  SetBenchmarkLabel(StringPrintf("  %0.2f", ContainerInfo(container)));
 
   for (int i = 0; i < n; ) {
     // Remove and re-insert 10% of the keys
@@ -179,12 +299,12 @@ void BM_Delete(int n) {
 // value constructors.
 template <typename T>
 void BM_QueueAddRem(int n) {
-  typedef typename base::remove_const<typename T::value_type>::type V;
+  typedef typename std::remove_const<typename T::value_type>::type V;
   typename KeyOfValue<typename T::key_type, V>::type key_of_value;
 
   // Disable timing while we perform some initialization.
   StopBenchmarkTiming();
-  CHECK(FLAGS_benchmark_values % 2 == 0);
+  assert(FLAGS_benchmark_values % 2 == 0);
 
   T container;
 
@@ -197,7 +317,7 @@ void BM_QueueAddRem(int n) {
     add_keys[i] = i;
   }
 
-  ACMRandom rand(FLAGS_test_random_seed);
+  RandGen rand(FLAGS_test_random_seed);
 
   random_shuffle(remove_keys.begin(), remove_keys.end(), rand);
   random_shuffle(add_keys.begin(), add_keys.end(), rand);
@@ -229,27 +349,25 @@ void BM_QueueAddRem(int n) {
     }
 
     int e = container.erase(key_of_value(g(offset - half + remove_keys[idx])));
-    DCHECK(e == 1);
+    assert(e == 1);
     container.insert(g(offset + half + add_keys[idx]));
   }
 
   StopBenchmarkTiming();
-
-  SetBenchmarkLabel(StringPrintf("  %0.2f", ContainerInfo(container)));
 }
 
 // Mixed insertion and deletion in the same range using pre-constructed values.
 template <typename T>
 void BM_MixedAddRem(int n) {
-  typedef typename base::remove_const<typename T::value_type>::type V;
+  typedef typename std::remove_const<typename T::value_type>::type V;
   typename KeyOfValue<typename T::key_type, V>::type key_of_value;
 
   // Disable timing while we perform some initialization.
   StopBenchmarkTiming();
-  CHECK(FLAGS_benchmark_values % 2 == 0);
+  assert(FLAGS_benchmark_values % 2 == 0);
 
   T container;
-  ACMRandom rand(FLAGS_test_random_seed);
+  RandGen rand(FLAGS_test_random_seed);
 
   vector<V> values = GenerateValues<V>(FLAGS_benchmark_values * 2);
 
@@ -282,20 +400,18 @@ void BM_MixedAddRem(int n) {
     }
 
     int e = container.erase(key_of_value(values[remove_keys[idx]]));
-    DCHECK(e == 1);
+    assert(e == 1);
     container.insert(values[add_keys[idx]]);
   }
 
   StopBenchmarkTiming();
-
-  SetBenchmarkLabel(StringPrintf("  %0.2f", ContainerInfo(container)));
 }
 
 // Insertion at end, removal from the beginning.  This benchmark
 // counts two value constructors.
 template <typename T>
 void BM_Fifo(int n) {
-  typedef typename base::remove_const<typename T::value_type>::type V;
+  typedef typename std::remove_const<typename T::value_type>::type V;
 
   // Disable timing while we perform some initialization.
   StopBenchmarkTiming();
@@ -315,14 +431,12 @@ void BM_Fifo(int n) {
   }
 
   StopBenchmarkTiming();
-
-  SetBenchmarkLabel(StringPrintf("  %0.2f", ContainerInfo(container)));
 }
 
 // Iteration (forward) through the tree
 template <typename T>
 void BM_FwdIter(int n) {
-  typedef typename base::remove_const<typename T::value_type>::type V;
+  typedef typename std::remove_const<typename T::value_type>::type V;
 
   // Disable timing while we perform some initialization.
   StopBenchmarkTiming();
@@ -352,30 +466,24 @@ void BM_FwdIter(int n) {
 
   StopBenchmarkTiming();
 
-  VLOG(4) << r; // Keep compiler from optimizing away r.
-
-  SetBenchmarkLabel(StringPrintf("  %0.2f", ContainerInfo(container)));
+  sink(r); // Keep compiler from optimizing away r.
 }
 
-typedef set<int32> stl_set_int32;
-typedef set<int64> stl_set_int64;
+typedef set<int32_t> stl_set_int32;
+typedef set<int64_t> stl_set_int64;
 typedef set<string> stl_set_string;
-typedef set<Cord> stl_set_cord;
 
-typedef map<int32, intptr_t> stl_map_int32;
-typedef map<int64, intptr_t> stl_map_int64;
+typedef map<int32_t, intptr_t> stl_map_int32;
+typedef map<int64_t, intptr_t> stl_map_int64;
 typedef map<string, intptr_t> stl_map_string;
-typedef map<Cord, intptr_t> stl_map_cord;
 
-typedef multiset<int32> stl_multiset_int32;
-typedef multiset<int64> stl_multiset_int64;
+typedef multiset<int32_t> stl_multiset_int32;
+typedef multiset<int64_t> stl_multiset_int64;
 typedef multiset<string> stl_multiset_string;
-typedef multiset<Cord> stl_multiset_cord;
 
-typedef multimap<int32, intptr_t> stl_multimap_int32;
-typedef multimap<int64, intptr_t> stl_multimap_int64;
+typedef multimap<int32_t, intptr_t> stl_multimap_int32;
+typedef multimap<int64_t, intptr_t> stl_multimap_int64;
 typedef multimap<string, intptr_t> stl_multimap_string;
-typedef multimap<Cord, intptr_t> stl_multimap_cord;
 
 #define MY_BENCHMARK_TYPES2(value, name, size)                                \
   typedef btree ## _set<value, less<value>, allocator<value>, size>           \
@@ -405,21 +513,15 @@ typedef multimap<Cord, intptr_t> stl_multimap_cord;
   MY_BENCHMARK_TYPES2(value, name, 1536); \
   MY_BENCHMARK_TYPES2(value, name, 2048)
 
-MY_BENCHMARK_TYPES(int32, int32);
-MY_BENCHMARK_TYPES(int64, int64);
+MY_BENCHMARK_TYPES(int32_t, int32);
+MY_BENCHMARK_TYPES(int64_t, int64);
 MY_BENCHMARK_TYPES(string, string);
-MY_BENCHMARK_TYPES(Cord, cord);
 
 #define MY_BENCHMARK4(type, name, func)                            \
   void BM_ ## type ## _ ## name(int n) { BM_ ## func <type>(n); }  \
-  BENCHMARK(BM_ ## type ## _ ## name)
+  BTREE_BENCHMARK(BM_ ## type ## _ ## name)
 
-// Define NODESIZE_TESTING when running btree_perf.py.  You need to do
-// a local build or raise the distcc timeout, it takes about 5 minutes
-// to build:
-//
-// blaze build --copts=-DNODESIZE_TESTING --cc_strategy=local
-//             --compilation_mode=opt util/btree/btree_test
+// Define NODESIZE_TESTING when running btree_perf.py.
 
 #ifdef NODESIZE_TESTING
 #define MY_BENCHMARK3(tree, type, name, func) \
@@ -465,8 +567,6 @@ MY_BENCHMARK(set_int64);
 MY_BENCHMARK(map_int64);
 MY_BENCHMARK(set_string);
 MY_BENCHMARK(map_string);
-MY_BENCHMARK(set_cord);
-MY_BENCHMARK(map_cord);
 
 MY_BENCHMARK(multiset_int32);
 MY_BENCHMARK(multimap_int32);
@@ -474,15 +574,11 @@ MY_BENCHMARK(multiset_int64);
 MY_BENCHMARK(multimap_int64);
 MY_BENCHMARK(multiset_string);
 MY_BENCHMARK(multimap_string);
-MY_BENCHMARK(multiset_cord);
-MY_BENCHMARK(multimap_cord);
 
 } // namespace
 } // namespace btree
 
 int main(int argc, char **argv) {
-  FLAGS_logtostderr = true;
-  InitGoogle(argv[0], &argc, &argv, true);
-  RunSpecifiedBenchmarks();
+  btree::RunBenchmarks();
   return 0;
 }

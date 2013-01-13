@@ -3,8 +3,8 @@ cmake_minimum_required(VERSION 2.6)
 project(cppbtree CXX)
 
 option(build_tests "Build B-tree tests" OFF)
-add_definitions(-std=c++0x)
-set(CMAKE_CXX_FLAGS "-g")
+add_definitions(-std=c++11)
+set(CMAKE_CXX_FLAGS "-g -O2")
 
 # CMake doesn't have a way to pure template library, 
 add_library(cppbtree btree.h btree_map.h btree_set.h safe_btree.h safe_btree_map.h safe_btree_set.h)
@@ -19,5 +19,5 @@ if(build_tests)
   add_executable(btree_bench btree_bench.cc btree_test_flags.cc)
   target_link_libraries(btree_test gtest_main gflags)
   target_link_libraries(safe_btree_test gtest_main gflags)
-  target_link_libraries(btree_bench gflags)
+  target_link_libraries(btree_bench gflags gtest)
 endif()
