@@ -147,6 +147,13 @@ class base_checker {
         const_tree_(tree_),
         checker_(x.checker_) {
   }
+  // Range constructor.
+  template <typename InputIterator>
+  base_checker(InputIterator b, InputIterator e)
+      : tree_(b, e),
+        const_tree_(tree_),
+        checker_(b, e) {
+  }
 
   // Iterator routines.
   iterator begin() { return tree_.begin(); }
@@ -398,8 +405,8 @@ class unique_checker : public base_checker<TreeType, CheckerType> {
   }
   // Range constructor.
   template <class InputIterator>
-  unique_checker(InputIterator b, InputIterator e) {
-    insert(b, e);
+  unique_checker(InputIterator b, InputIterator e)
+      : super_type(b, e) {
   }
 
   // Insertion routines.
@@ -455,8 +462,8 @@ class multi_checker : public base_checker<TreeType, CheckerType> {
   }
   // Range constructor.
   template <class InputIterator>
-  multi_checker(InputIterator b, InputIterator e) {
-    insert(b, e);
+  multi_checker(InputIterator b, InputIterator e)
+      : super_type(b, e) {
   }
 
   // Insertion routines.
@@ -587,6 +594,7 @@ void DoTest(const char *name, T *b, const std::vector<V> &values) {
     mutable_b.insert(values[i]);
     mutable_b.value_check(values[i]);
   }
+  assert(mutable_b.size() == values.size());
 
   const_b.verify();
   printf("    %s fullness=%0.2f  overhead=%0.2f  bytes-per-value=%0.2f\n",

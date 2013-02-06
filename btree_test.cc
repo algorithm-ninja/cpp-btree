@@ -244,5 +244,24 @@ TEST(Btree, Comparison) {
   EXPECT_TRUE(my_map != my_map_copy);
 }
 
+TEST(Btree, RangeCtorSanity) {
+  typedef btree_set<int, less<int>, allocator<int>, 256> test_set;
+  typedef btree_map<int, int, less<int>, allocator<int>, 256> test_map;
+  typedef btree_multiset<int, less<int>, allocator<int>, 256> test_mset;
+  typedef btree_multimap<int, int, less<int>, allocator<int>, 256> test_mmap;
+  vector<int> ivec;
+  ivec.push_back(1);
+  map<int, int> imap;
+  imap.insert(make_pair(1, 2));
+  test_mset tmset(ivec.begin(), ivec.end());
+  test_mmap tmmap(imap.begin(), imap.end());
+  test_set tset(ivec.begin(), ivec.end());
+  test_map tmap(imap.begin(), imap.end());
+  EXPECT_EQ(1, tmset.size());
+  EXPECT_EQ(1, tmmap.size());
+  EXPECT_EQ(1, tset.size());
+  EXPECT_EQ(1, tmap.size());
+}
+
 } // namespace
 } // namespace btree

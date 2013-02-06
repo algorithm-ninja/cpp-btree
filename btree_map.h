@@ -33,7 +33,7 @@
 
 namespace btree {
 
-// The btree_map class is needed mainly for it's constructors.
+// The btree_map class is needed mainly for its constructors.
 template <typename Key, typename Value,
           typename Compare = std::less<Key>,
           typename Alloc = std::allocator<std::pair<const Key, Value> >,
@@ -68,7 +68,7 @@ class btree_map : public btree_map_container<
   btree_map(InputIterator b, InputIterator e,
             const key_compare &comp = key_compare(),
             const allocator_type &alloc = allocator_type())
-      : super_type(comp, alloc) {
+      : super_type(b, e, comp, alloc) {
   }
 };
 
@@ -78,7 +78,7 @@ inline void swap(btree_map<K, V, C, A, N> &x,
   x.swap(y);
 }
 
-// The btree_multimap class is needed mainly for it's constructors.
+// The btree_multimap class is needed mainly for its constructors.
 template <typename Key, typename Value,
           typename Compare = std::less<Key>,
           typename Alloc = std::allocator<std::pair<const Key, Value> >,

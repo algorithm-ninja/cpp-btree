@@ -29,7 +29,7 @@
 
 namespace btree {
 
-// The btree_set class is needed mainly for it's constructors.
+// The btree_set class is needed mainly for its constructors.
 template <typename Key,
           typename Compare = std::less<Key>,
           typename Alloc = std::allocator<Key>,
@@ -72,7 +72,7 @@ inline void swap(btree_set<K, C, A, N> &x, btree_set<K, C, A, N> &y) {
   x.swap(y);
 }
 
-// The btree_multiset class is needed mainly for it's constructors.
+// The btree_multiset class is needed mainly for its constructors.
 template <typename Key,
           typename Compare = std::less<Key>,
           typename Alloc = std::allocator<Key>,

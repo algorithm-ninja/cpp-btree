@@ -261,8 +261,7 @@ class btree_map_container : public btree_unique_container<Tree> {
   btree_map_container(InputIterator b, InputIterator e,
                       const key_compare &comp = key_compare(),
                       const allocator_type &alloc = allocator_type())
-      : super_type(comp, alloc) {
-    insert(b, e);
+      : super_type(b, e, comp, alloc) {
   }
 
   // Insertion routines.
@@ -303,7 +302,7 @@ class btree_multi_container : public btree_container<Tree> {
   btree_multi_container(InputIterator b, InputIterator e,
                         const key_compare &comp = key_compare(),
                         const allocator_type &alloc = allocator_type())
-      : super_type(b, e, comp, alloc) {
+      : super_type(comp, alloc) {
     insert(b, e);
   }
 
