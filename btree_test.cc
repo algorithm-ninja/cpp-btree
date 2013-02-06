@@ -245,14 +245,17 @@ TEST(Btree, Comparison) {
 }
 
 TEST(Btree, RangeCtorSanity) {
-  typedef btree_set<int, less<int>, allocator<int>, 256> test_set;
-  typedef btree_map<int, int, less<int>, allocator<int>, 256> test_map;
-  typedef btree_multiset<int, less<int>, allocator<int>, 256> test_mset;
-  typedef btree_multimap<int, int, less<int>, allocator<int>, 256> test_mmap;
-  vector<int> ivec;
+  typedef btree_set<int, std::less<int>, std::allocator<int>, 256> test_set;
+  typedef btree_map<int, int, std::less<int>, std::allocator<int>, 256> 
+      test_map;
+  typedef btree_multiset<int, std::less<int>, std::allocator<int>, 256> 
+      test_mset;
+  typedef btree_multimap<int, int, std::less<int>, std::allocator<int>, 256> 
+      test_mmap;
+  std::vector<int> ivec;
   ivec.push_back(1);
-  map<int, int> imap;
-  imap.insert(make_pair(1, 2));
+  std::map<int, int> imap;
+  imap.insert(std::make_pair(1, 2));
   test_mset tmset(ivec.begin(), ivec.end());
   test_mmap tmmap(imap.begin(), imap.end());
   test_set tset(ivec.begin(), ivec.end());
