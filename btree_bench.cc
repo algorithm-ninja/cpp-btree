@@ -133,7 +133,7 @@ void BenchmarkRun::Reset() {
 void BenchmarkRun::Run() {
   assert(current_benchmark == NULL);
   current_benchmark = this;
-  int64_t iters = FLAGS_benchmark_min_iters;
+  int iters = FLAGS_benchmark_min_iters;
   for (;;) {
     Reset();
     Start();
@@ -150,10 +150,9 @@ void BenchmarkRun::Run() {
     }
     iters = min(iters, FLAGS_benchmark_max_iters);
   }
-  fprintf(stdout, "%s\t%qu\t%qu\n", 
-	  benchmark_name, 
-	  accum_micros * 1000ULL / iters, 
-	  iters);
+  std::cout << benchmark_name << "\t"
+	    << accum_micros * 1000 / iters << "\t"
+	    << iters;
   current_benchmark = NULL;
 }
 
